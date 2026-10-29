@@ -1,0 +1,402 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Student Support Agent</title>
+<style>
+:root{
+  --bg:#f4f5f7; --panel:#ffffff; --panel-2:#f8f9fb; --line:#e3e6eb; --text:#16202e; --muted:#667085;
+  --accent:#2f5bea; --accent-soft:#e8edfd; --ok:#13795b; --ok-soft:#e2f5ee; --bad:#b42318; --bad-soft:#fdeceb;
+  --warn:#a15c07; --warn-soft:#fdf2dc; --user:#2f5bea; --user-text:#fff; --shadow:0 1px 2px rgba(16,24,40,.06);
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#0e1116; --panel:#171b22; --panel-2:#1c212a; --line:#2a313c; --text:#e8ecf2; --muted:#98a2b3;
+    --accent:#7b9bff; --accent-soft:#222c4d; --ok:#4cd3a1; --ok-soft:#14302a; --bad:#ff8a80; --bad-soft:#3a1d1b;
+    --warn:#f5b64c; --warn-soft:#37290f; --user:#3a5fe0; --user-text:#fff; --shadow:none;
+  }
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{background:var(--bg);color:var(--text);font:14px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+button,select,input{font:inherit;color:inherit}
+.app{max-width:1400px;margin:0 auto;padding:16px;display:flex;flex-direction:column;gap:14px;min-height:100%}
+
+/* header */
+.top{display:flex;align-items:center;gap:14px;flex-wrap:wrap;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 14px;box-shadow:var(--shadow)}
+.brand{display:flex;align-items:center;gap:10px;font-weight:650;font-size:15px}
+.logo{width:30px;height:30px;border-radius:8px;background:var(--accent);color:#fff;display:grid;place-items:center;font-weight:700}
+.tabs{display:flex;gap:4px;margin-left:8px}
+.tab{border:0;background:transparent;padding:7px 12px;border-radius:8px;cursor:pointer;color:var(--muted);font-weight:550}
+.tab[aria-selected=true]{background:var(--accent-soft);color:var(--accent)}
+.spacer{flex:1}
+.who{display:flex;align-items:center;gap:8px}
+.who select{background:var(--panel-2);border:1px solid var(--line);border-radius:8px;padding:6px 8px}
+.pill{font-size:12px;border:1px solid var(--line);border-radius:999px;padding:2px 9px;color:var(--muted);background:var(--panel-2);white-space:nowrap}
+.btn{border:1px solid var(--line);background:var(--panel);border-radius:8px;padding:6px 11px;cursor:pointer;font-weight:550}
+.btn:hover{background:var(--panel-2)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.primary:hover{filter:brightness(1.07)}
+.btn:disabled{opacity:.55;cursor:not-allowed}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* KPI */
+.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
+#evalKpis{grid-template-columns:repeat(6,1fr)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow)}
+.kpi{padding:12px 14px}
+.kpi .l{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.04em}
+.kpi .v{font-size:24px;font-weight:650;margin-top:2px;font-variant-numeric:tabular-nums}
+.kpi .s{color:var(--muted);font-size:12px}
+
+/* main grid */
+.grid{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:14px;align-items:start}
+.col{display:flex;flex-direction:column;gap:14px;min-width:0}
+.card h2{margin:0;font-size:13px;font-weight:650;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+.card .hd{display:flex;align-items:center;justify-content:space-between;padding:11px 14px;border-bottom:1px solid var(--line)}
+.card .bd{padding:12px 14px}
+
+/* chat */
+.chat{display:flex;flex-direction:column;height:calc(100vh - 250px);min-height:460px}
+.msgs{flex:1;overflow:auto;padding:14px;display:flex;flex-direction:column;gap:12px}
+.row{display:flex;flex-direction:column;max-width:82%}
+.row.u{align-self:flex-end;align-items:flex-end}
+.row.a{align-self:flex-start}
+.bubble{padding:9px 13px;border-radius:14px;white-space:pre-wrap;word-wrap:break-word}
+.u .bubble{background:var(--user);color:var(--user-text);border-bottom-right-radius:4px}
+.a .bubble{background:var(--panel-2);border:1px solid var(--line);border-bottom-left-radius:4px}
+.a.sel .bubble{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.a .bubble{cursor:pointer}
+.chips{display:flex;gap:5px;flex-wrap:wrap;margin-top:5px}
+.chip{font-size:11.5px;border-radius:6px;padding:1px 7px;background:var(--accent-soft);color:var(--accent);font-weight:550}
+.chip.gray{background:var(--panel-2);color:var(--muted);border:1px solid var(--line)}
+.chip.ok{background:var(--ok-soft);color:var(--ok)}
+.chip.bad{background:var(--bad-soft);color:var(--bad)}
+.chip.warn{background:var(--warn-soft);color:var(--warn)}
+.empty{margin:auto;text-align:center;color:var(--muted);max-width:360px}
+.empty b{display:block;color:var(--text);font-size:15px;margin-bottom:4px}
+.quick{display:flex;gap:6px;flex-wrap:wrap;padding:0 14px 10px}
+.quick button{border:1px solid var(--line);background:var(--panel);border-radius:999px;padding:4px 11px;cursor:pointer;color:var(--muted);font-size:12.5px}
+.quick button:hover{color:var(--accent);border-color:var(--accent)}
+.composer{display:flex;gap:8px;padding:12px 14px;border-top:1px solid var(--line)}
+.composer input{flex:1;background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.dots span{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--muted);margin:0 2px;animation:b 1s infinite}
+.dots span:nth-child(2){animation-delay:.15s}.dots span:nth-child(3){animation-delay:.3s}
+@keyframes b{0%,80%,100%{opacity:.25}40%{opacity:1}}
+
+/* trace */
+.steps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.step{display:flex;gap:9px;align-items:flex-start;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:var(--panel-2)}
+.step .ic{width:20px;height:20px;border-radius:5px;display:grid;place-items:center;font-size:11px;font-weight:700;flex:none;margin-top:1px}
+.ic.m{background:var(--accent-soft);color:var(--accent)} .ic.t{background:var(--ok-soft);color:var(--ok)} .ic.f{background:var(--bad-soft);color:var(--bad)}
+.step .nm{font-weight:600}
+.step .sub{color:var(--muted);font-size:12px;word-break:break-word}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:5px 12px;margin-top:10px}
+.kv .k{color:var(--muted);font-size:12px}
+.kv .vv{display:flex;gap:5px;flex-wrap:wrap}
+.muted{color:var(--muted)}
+.bars{display:flex;align-items:flex-end;gap:4px;height:64px}
+.bars div{flex:1;background:var(--accent);border-radius:3px 3px 0 0;min-height:3px;opacity:.85}
+.list{display:flex;flex-direction:column;gap:6px}
+.item{display:flex;justify-content:space-between;gap:10px;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:var(--panel-2)}
+.item .k{color:var(--muted)}
+.item .v{font-weight:550;text-align:right;word-break:break-word}
+
+/* eval */
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--muted);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.04em;background:var(--panel-2);position:sticky;top:0}
+tr.clk{cursor:pointer} tr.clk:hover td{background:var(--panel-2)}
+.scroll{overflow:auto;max-height:540px}
+.progress{height:6px;border-radius:99px;background:var(--line);overflow:hidden}
+.progress i{display:block;height:100%;background:var(--accent);transition:width .3s}
+.ans{background:var(--panel-2);padding:9px 11px;border-radius:8px;white-space:pre-wrap;margin:4px 0 2px}
+.hidden{display:none!important}
+.notice{padding:10px 14px;border-radius:10px;background:var(--bad-soft);color:var(--bad);border:1px solid var(--line)}
+
+@media (max-width:980px){
+  .grid{grid-template-columns:1fr}
+  .kpis,#evalKpis{grid-template-columns:repeat(2,1fr)}
+  .chat{height:70vh}
+  .row{max-width:94%}
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header class="top">
+    <div class="brand"><div class="logo">N</div> Student Support Agent</div>
+    <nav class="tabs" role="tablist">
+      <button class="tab" role="tab" id="tab-assist" aria-selected="true">Assistant</button>
+      <button class="tab" role="tab" id="tab-eval" aria-selected="false">Evaluation</button>
+    </nav>
+    <div class="spacer"></div>
+    <div class="who">
+      <label for="student" class="muted">Logged in as</label>
+      <select id="student"></select>
+    </div>
+    <span class="pill" id="modelPill">model</span>
+    <span class="pill" id="sessionPill">session</span>
+    <button class="btn" id="btnNew" title="Clear conversation, keep long-term memory">New session</button>
+    <button class="btn" id="btnForget" title="Erase this student's saved memory">Forget memory</button>
+  </header>
+
+  <!-- ===================== ASSISTANT TAB ===================== -->
+  <section id="view-assist" class="col">
+    <div class="kpis" id="kpis"></div>
+
+    <div class="grid">
+      <div class="card chat">
+        <div class="hd"><h2>Conversation</h2><span class="muted" style="font-size:12px">Click an answer to inspect its trace</span></div>
+        <div class="msgs" id="msgs" aria-live="polite"></div>
+        <div class="quick" id="quick"></div>
+        <form class="composer" id="form" autocomplete="off">
+          <input id="input" type="text" placeholder="Ask about fees, scholarships, course changes, policies..." maxlength="1000" aria-label="Message">
+          <button class="btn primary" id="send" type="submit">Send</button>
+        </form>
+      </div>
+
+      <div class="col">
+        <div class="card">
+          <div class="hd"><h2>Agent trace</h2><span class="pill" id="traceTag">no answer yet</span></div>
+          <div class="bd" id="trace"><span class="muted">Ask a question to see which tools, handbook sections and memory the agent used.</span></div>
+        </div>
+        <div class="card">
+          <div class="hd"><h2>Latency per question</h2><span class="muted" style="font-size:12px" id="latNote"></span></div>
+          <div class="bd"><div class="bars" id="bars"></div></div>
+        </div>
+        <div class="card">
+          <div class="hd"><h2>Long-term memory</h2><span class="pill" id="memCount">0</span></div>
+          <div class="bd"><div class="list" id="memory"></div></div>
+        </div>
+        <div class="card">
+          <div class="hd"><h2>Support tickets</h2><span class="pill" id="tkCount">0</span></div>
+          <div class="bd"><div class="list" id="tickets"></div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== EVALUATION TAB ===================== -->
+  <section id="view-eval" class="col hidden">
+    <div class="card">
+      <div class="hd">
+        <h2>Evaluation: 15 test questions</h2>
+        <button class="btn primary" id="runEval">Run evaluation</button>
+      </div>
+      <div class="bd">
+        <div class="muted" id="evalHint">Runs every test question through the real agent (uses your Groq key, takes about a minute) and checks tool choice, evidence, answer content and memory/privacy.</div>
+        <div class="progress hidden" id="evalProg" style="margin-top:10px"><i style="width:0"></i></div>
+        <div class="notice hidden" id="evalErr" style="margin-top:10px"></div>
+      </div>
+    </div>
+    <div class="kpis hidden" id="evalKpis"></div>
+    <div class="card hidden" id="evalTableCard">
+      <div class="hd"><h2>Per-question results</h2><span class="muted" style="font-size:12px">Click a row to read the answer</span></div>
+      <div class="scroll"><table>
+        <thead><tr><th>ID</th><th>Scenario</th><th>Tools used</th><th>Evidence</th><th>Latency</th><th>In / Out</th><th>Result</th></tr></thead>
+        <tbody id="evalBody"></tbody>
+      </table></div>
+    </div>
+  </section>
+</div>
+
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fmt = n => Number(n).toLocaleString("en-IN");
+const QUICK = [
+  "What is my current fee status?",
+  "The payment portal failed. Can I pay on the next working day?",
+  "What do I need to maintain to keep my scholarship?",
+  "How do I change my specialisation?",
+  "What is the hostel fee refund policy?",
+  "I'm in the PGDM Big Data Analytics programme and prefer email."
+];
+let S = {student: "S001", data: null, selected: null, busy: false};
+try { const saved = localStorage.getItem("student"); if (saved) S.student = saved; } catch (e) {}
+
+async function api(path, body) {
+  const r = await fetch(path, body ? {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(body)} : undefined);
+  const j = await r.json().catch(() => ({error: "Bad response"}));
+  if (!r.ok) throw new Error(j.error || r.statusText);
+  return j;
+}
+
+/* ---------- load + render ---------- */
+async function load() {
+  S.data = await api("/api/state?student=" + encodeURIComponent(S.student));
+  const d = S.data;
+  const sel = $("student");
+  if (!sel.options.length) {
+    d.students.forEach(s => { const o = document.createElement("option"); o.value = s.id; o.textContent = `${s.id} - ${s.name}`; sel.appendChild(o); });
+  }
+  sel.value = S.student;
+  $("modelPill").textContent = d.model;
+  $("sessionPill").textContent = "session " + d.session;
+  if (S.selected === null || S.selected >= d.transcript.length) S.selected = d.transcript.length - 1;
+  renderKpis(d.metrics); renderMsgs(d.transcript); renderTrace(); renderBars(d.metrics);
+  renderMemory(d.memory); renderTickets(d.tickets);
+}
+
+function kpi(l, v, s) { return `<div class="card kpi"><div class="l">${esc(l)}</div><div class="v">${esc(v)}</div><div class="s">${esc(s || "")}</div></div>`; }
+function renderKpis(m) {
+  $("kpis").innerHTML =
+    kpi("Questions", m.questions, "this session") +
+    kpi("Avg latency", m.questions ? m.avg_latency + " s" : "-", m.questions ? "max " + m.max_latency + " s" : "") +
+    kpi("Tool calls", m.tool_calls, "across all questions") +
+    kpi("Input tokens", fmt(m.input_tokens), "sent to model") +
+    kpi("Output tokens", fmt(m.output_tokens), "generated");
+}
+
+function renderMsgs(tr) {
+  const box = $("msgs");
+  if (!tr.length) {
+    box.innerHTML = `<div class="empty"><b>Hi ${esc(S.data.students.find(s => s.id === S.student)?.name.split(" ")[0] || "")}, how can I help?</b>Ask about your fees, scholarship, specialisation change, or any handbook policy. Pick a suggestion below to start.</div>`;
+  } else {
+    box.innerHTML = tr.map((t, i) => {
+      const tr_ = t.trace, tools = tr_.tools_used.length ? tr_.tools_used.map(x => `<span class="chip">${esc(x)}</span>`).join("") : `<span class="chip gray">no tool</span>`;
+      const err = tr_.error ? `<span class="chip bad">error</span>` : "";
+      return `<div class="row u"><div class="bubble">${esc(t.q)}</div></div>
+        <div class="row a ${i === S.selected ? "sel" : ""}" data-i="${i}">
+          <div class="bubble" tabindex="0" role="button" aria-label="Inspect trace for this answer">${esc(t.a)}</div>
+          <div class="chips">${tools}${err}<span class="chip gray">${tr_.latency_s}s</span></div>
+        </div>`;
+    }).join("");
+    box.querySelectorAll(".row.a").forEach(el => {
+      const pick = () => { S.selected = +el.dataset.i; renderMsgs(S.data.transcript); renderTrace(); };
+      el.querySelector(".bubble").addEventListener("click", pick);
+      el.querySelector(".bubble").addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pick(); } });
+    });
+  }
+  box.scrollTop = box.scrollHeight;
+  $("quick").innerHTML = tr.length ? "" : QUICK.map(q => `<button type="button">${esc(q)}</button>`).join("");
+  $("quick").querySelectorAll("button").forEach(b => b.addEventListener("click", () => send(b.textContent)));
+}
+
+function renderTrace() {
+  const d = S.data, el = $("trace");
+  const t = d.transcript[S.selected]?.trace;
+  if (!t) { $("traceTag").textContent = "no answer yet"; el.innerHTML = `<span class="muted">Ask a question to see which tools, handbook sections and memory the agent used.</span>`; return; }
+  $("traceTag").textContent = "answer #" + (S.selected + 1);
+  const steps = t.steps.map(s => {
+    if (s.type === "model_call") {
+      return `<li class="step"><span class="ic m">AI</span><div><div class="nm">Model call ${s.n}</div><div class="sub">${s.stop_reason === "tool_use" ? "decided to use a tool" : "wrote the answer"} &middot; ${s.input_tokens} in / ${s.output_tokens} out &middot; ${s.latency_s}s</div></div></li>`;
+    }
+    return `<li class="step"><span class="ic ${s.ok ? "t" : "f"}">${s.ok ? "fx" : "!"}</span><div><div class="nm">${esc(s.tool)}${s.ok ? "" : " &mdash; failed" + (s.attempts > 1 ? " after " + s.attempts + " attempts" : "")}</div><div class="sub">${esc(s.args === "{}" ? "no arguments" : s.args)} &middot; ${s.latency_s}s</div></div></li>`;
+  }).join("");
+  const chips = (arr, cls) => arr.length ? arr.map(x => `<span class="chip ${cls || ""}">${esc(x)}</span>`).join("") : `<span class="muted">none</span>`;
+  const rej = t.memory_rejected.map(r => `<span class="chip bad" title="${esc(r.reason)}">${esc(r.key)}: ${esc(r.reason)}</span>`).join("");
+  el.innerHTML = `<ul class="steps">${steps}</ul>
+    <div class="kv">
+      <span class="k">Handbook sections</span><span class="vv">${chips(t.retrieved_chunks.map(c => c.id + " (" + c.score + ")"))}</span>
+      <span class="k">Memory used</span><span class="vv">${chips(t.memory_used)}</span>
+      <span class="k">Memory saved</span><span class="vv">${chips(t.memory_written, "ok")}</span>
+      <span class="k">Memory rejected</span><span class="vv">${rej || `<span class="muted">none</span>`}</span>
+      <span class="k">Grounding check</span><span class="vv">${groundChip(t.grounding)}</span>
+      <span class="k">Privacy</span><span class="vv">${t.sensitive_flags.length ? `<span class="chip warn">credential masked before model</span>` : `<span class="muted">nothing sensitive detected</span>`}</span>
+      <span class="k">Totals</span><span class="vv"><span class="chip gray">${t.latency_s}s</span><span class="chip gray">${t.input_tokens} in</span><span class="chip gray">${t.output_tokens} out</span></span>
+      ${t.error ? `<span class="k">Error</span><span class="vv"><span class="chip bad">${esc(t.error)}</span></span>` : ""}
+    </div>`;
+}
+
+function groundChip(g) {
+  if (!g || g.status === "passed") return `<span class="chip ok">passed: every fact traced to a tool result</span>`;
+  const why = esc((g.violations || []).join(" | "));
+  return g.status === "corrected"
+    ? `<span class="chip warn" title="${why}">draft had unsupported claims, rewritten and re-checked</span>`
+    : `<span class="chip bad" title="${why}">blocked: unsupported claims, safe fallback shown</span>`;
+}
+function renderBars(m) {
+  const l = m.latencies, max = Math.max(1, ...l);
+  $("bars").innerHTML = l.length ? l.map((v, i) => `<div style="height:${Math.max(5, v / max * 100)}%" title="Q${i + 1}: ${v}s"></div>`).join("") : `<span class="muted">no data yet</span>`;
+  $("latNote").textContent = l.length ? `last ${l.length}, max ${max}s` : "";
+}
+function renderMemory(mem) {
+  const keys = Object.keys(mem);
+  $("memCount").textContent = keys.length;
+  $("memory").innerHTML = keys.length ? keys.map(k => `<div class="item"><span class="k">${esc(k.replace(/_/g, " "))}</span><span class="v">${esc(mem[k])}</span></div>`).join("") : `<span class="muted">Nothing saved. Tell the agent your programme, batch or preferred contact channel.</span>`;
+}
+function renderTickets(tk) {
+  $("tkCount").textContent = tk.length;
+  $("tickets").innerHTML = tk.length ? tk.map(t => `<div class="item"><span><b>${esc(t.ticket_id)}</b> <span class="chip gray">${esc(t.category)}</span><br><span class="muted">${esc(t.summary)}</span></span><span class="v">${esc(t.status)}<br><span class="muted" style="font-weight:400">reply in ${esc(t.expected_first_response)}</span></span></div>`).join("") : `<span class="muted">No tickets yet.</span>`;
+}
+
+/* ---------- chat ---------- */
+async function send(text) {
+  text = (text || "").trim();
+  if (!text || S.busy) return;
+  S.busy = true; $("send").disabled = true; $("input").value = "";
+  const box = $("msgs");
+  if (box.querySelector(".empty")) box.innerHTML = "";
+  box.insertAdjacentHTML("beforeend", `<div class="row u"><div class="bubble">${esc(text)}</div></div><div class="row a" id="typing"><div class="bubble"><span class="dots"><span></span><span></span><span></span></span></div></div>`);
+  box.scrollTop = box.scrollHeight;
+  try { await api("/api/chat", {student: S.student, message: text}); S.selected = null; }
+  catch (e) { $("typing")?.remove(); box.insertAdjacentHTML("beforeend", `<div class="row a"><div class="bubble" style="border-color:var(--bad)">Request failed: ${esc(e.message)}</div></div>`); }
+  S.busy = false; $("send").disabled = false;
+  await load(); $("input").focus();
+}
+$("form").addEventListener("submit", e => { e.preventDefault(); send($("input").value); });
+
+/* ---------- header actions ---------- */
+$("student").addEventListener("change", e => { S.student = e.target.value; S.selected = null; try { localStorage.setItem("student", S.student); } catch (x) {} load(); });
+$("btnNew").addEventListener("click", async () => { await api("/api/new", {student: S.student}); S.selected = null; load(); });
+$("btnForget").addEventListener("click", async () => { if (confirm("Erase saved memory for " + S.student + "?")) { await api("/api/forget", {student: S.student}); load(); } });
+function showTab(name) {
+  $("tab-assist").setAttribute("aria-selected", name === "assist"); $("tab-eval").setAttribute("aria-selected", name === "eval");
+  $("view-assist").classList.toggle("hidden", name !== "assist"); $("view-eval").classList.toggle("hidden", name !== "eval");
+  if (name === "eval") pollEval();
+}
+$("tab-assist").addEventListener("click", () => showTab("assist"));
+$("tab-eval").addEventListener("click", () => showTab("eval"));
+
+/* ---------- evaluation ---------- */
+let evalTimer = null;
+$("runEval").addEventListener("click", async () => { await api("/api/eval/start", {student: S.student}); pollEval(); });
+async function pollEval() {
+  clearTimeout(evalTimer);
+  let e; try { e = await api("/api/eval"); } catch (x) { return; }
+  const running = e.status === "running";
+  $("runEval").disabled = running;
+  $("runEval").textContent = running ? `Running ${e.done}/${e.total}...` : (e.status === "idle" ? "Run evaluation" : "Run again");
+  $("evalProg").classList.toggle("hidden", !running);
+  $("evalProg").firstElementChild.style.width = (e.done / e.total * 100) + "%";
+  $("evalErr").classList.toggle("hidden", e.status !== "error");
+  if (e.status === "error") $("evalErr").textContent = e.error;
+  renderEval(e);
+  if (running) evalTimer = setTimeout(pollEval, 1500);
+}
+function renderEval(e) {
+  const has = e.rows.length > 0;
+  $("evalTableCard").classList.toggle("hidden", !has);
+  $("evalKpis").classList.toggle("hidden", !e.summary);
+  if (e.summary) {
+    const s = e.summary;
+    $("evalKpis").innerHTML =
+      kpi("Task accuracy", `${s.success}/${s.n}`, Math.round(100 * s.success / s.n) + "% fully correct") +
+      kpi("Tool choice", `${s.tool_ok}/${s.n}`, "right tools, none forbidden") +
+      kpi("Grounding", `${s.grounded_first}/${s.n}`, "answers grounded on first draft") +
+      kpi("Latency", s.lat_mean + " s", `median ${s.lat_median}s, max ${s.lat_max}s`) +
+      kpi("Tokens / question", `${fmt(s.in_mean)} in`, `${fmt(s.out_mean)} out (total ${fmt(s.in_total + s.out_total)})`);
+    $("evalKpis").innerHTML +=
+      kpi("Context saved", s.context_saving == null ? "-" : s.context_saving + "%", "retrieved chunks vs whole handbook");
+  }
+  $("evalBody").innerHTML = e.rows.map((r, i) => `
+    <tr class="clk" data-i="${i}">
+      <td><b>${esc(r.id)}</b></td><td>${esc(r.scenario)}<div class="muted">${esc(r.question)}</div></td>
+      <td>${r.tools.length ? r.tools.map(t => `<span class="chip">${esc(t)}</span>`).join(" ") : `<span class="muted">none</span>`}</td>
+      <td>${r.evidence.length ? r.evidence.map(t => `<span class="chip gray">${esc(t)}</span>`).join(" ") : `<span class="muted">-</span>`}</td>
+      <td>${r.latency}s</td><td>${r.in} / ${r.out}</td>
+      <td><span class="chip ${r.ok ? "ok" : "bad"}">${r.ok ? "PASS" : "FAIL"}</span></td>
+    </tr>
+    <tr class="hidden" id="d${i}"><td colspan="7"><div class="ans">${esc(r.answer)}</div>${r.fails.length ? `<span class="chip bad">${esc(r.fails.join("; "))}</span>` : ""}</td></tr>`).join("");
+  $("evalBody").querySelectorAll("tr.clk").forEach(tr => tr.addEventListener("click", () => $("d" + tr.dataset.i).classList.toggle("hidden")));
+}
+
+load().catch(e => { document.body.insertAdjacentHTML("afterbegin", `<div class="notice" style="margin:16px">Could not load dashboard data: ${esc(e.message)}</div>`); });
+</script>
+</body>
+</html>

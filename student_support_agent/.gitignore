@@ -1,0 +1,9 @@
+.env
+**/.env
+.venv/
+**/.venv/
+**pycache**/
+**/**pycache**/
+*.py[cod]
+runtime/traces/
+**/runtime/traces/
